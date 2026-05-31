@@ -2,7 +2,7 @@
 """Django's command-line utility for administrative tasks."""
 import os
 import sys
-
+# Change to trigger Github Actions
 
 def main():
     """Run administrative tasks."""
