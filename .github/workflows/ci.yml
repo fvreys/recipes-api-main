@@ -48,7 +48,7 @@ jobs:
           show-diffcover: 'true'
 
       - name: Review agent
-        continue-on-error: true
+        continue-on-error: false
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           REPOSITORY: ${{ github.repository }}
@@ -56,4 +56,3 @@ jobs:
           TINY_API_KEY: ${{ secrets.TINY_API_KEY }}
           TINY_BASE_URL: ${{ secrets.TINY_BASE_URL }}
         run: poetry run python agent.py $GITHUB_TOKEN $REPOSITORY $PR_NUMBER $TINY_API_KEY $TINY_BASE_URL
-
