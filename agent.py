@@ -34,11 +34,13 @@ llm = OpenAILike (
 )
 
 # My own public GitHub repository URL if needed.
-repo_url = os.getenv ("REPOSITORY")
-pr_number_environment = os.getenv ("PR_NUMBER")
-# repo_url = os.getenv ("REPOSITORY") or "https://github.com/fvreys/recipes-api-main.git"
-# pr_number_environment = os.getenv ("PR_NUMBER") or 2
-# v4> Small change - trigger Github actions
+repo_url = os.getenv("REPOSITORY")
+pr_number_raw = os.getenv("PR_NUMBER")
+# repo_url = os.getenv("REPOSITORY") or "https://github.com/fvreys/recipes-api-main.git"
+# pr_number_raw = os.getenv("PR_NUMBER") or "2"
+if not pr_number_raw:
+    raise RuntimeError("PR_NUMBER is not set.")
+pr_number_environment = int(pr_number_raw)
 
 # TOOLS
 def get_repository(file_path: str):
@@ -48,21 +50,38 @@ def get_repository(file_path: str):
         raise RuntimeError ("GITHUB_TOKEN is not set.")
     git = Github (auth=Auth.Token (github_token))
 
-    if (not file_path or file_path.strip () in {".", "/"}) \
-            or (file_path == "") or (file_path is None):
-        final_repo_url = repo_url
-    else:
-        final_repo_url = file_path.strip ()
+    # if (not file_path or file_path.strip () in {".", "/"}) \
+    #         or (file_path == "") or (file_path is None):
+    #     final_repo_url = repo_url
+    # else:
+    #     final_repo_url = file_path.strip ()
+    #
+    # repo_name = final_repo_url.split ('/')[-1].replace ('.git', '')
+    # username = final_repo_url.split ('/')[-2]
+    # full_repo_name = f"{username}/{repo_name}"
+    # repo = git.get_repo (full_repo_name)
+    # return repo
 
-    repo_name = final_repo_url.split ('/')[-1].replace ('.git', '')
-    username = final_repo_url.split ('/')[-2]
-    full_repo_name = f"{username}/{repo_name}"
-    repo = git.get_repo (full_repo_name)
-    return repo
+    repository_value = (file_path or "").strip() or repo_url
+
+    if repository_value.startswith("https://github.com/"):
+        repository_value = repository_value.removeprefix("https://github.com/")
+        repository_value = repository_value.removesuffix(".git")
+
+    repository_value = repository_value.strip("/")
+
+    if repository_value.count("/") != 1:
+        raise ValueError(
+            "Repository must be in 'owner/repo' format or be a full GitHub repository URL."
+        )
+
+    return git.get_repo(repository_value)
 
 
 def get_pr_details(pr_number: int, file_path: str) -> dict[str, int | str | list[Any]]:
     """ Given a pull request number, return details about the pull request such as the author, title, body, commit SHAs, state, and more. """
+    if file_path is None or file_path == "":
+        file_path = repo_url
     repo = get_repository (file_path)
     pr = repo.get_pull (pr_number)
 
@@ -85,6 +104,8 @@ def get_pr_commit_details(pr_number: int, file_path: str) -> list[dict[str, Any]
     """ Given a pull request number, return details about the commits in the pull request such as the commit SHAs, commit messages, and more. """
     " IMPROVEMENT: Given a commit SHA, return all changed files in the commit "
     " commit = repo.get_commit(head_sha) / for f in commit.files: "
+    if file_path is None or file_path == "":
+        file_path = repo_url
     pr_details = get_pr_details (pr_number, file_path)
     # print (f'*** commit details {pr_details}')
     repo = get_repository (file_path)
@@ -109,6 +130,8 @@ def get_pr_commit_details(pr_number: int, file_path: str) -> list[dict[str, Any]
 
 def get_file(file_path: str, file_to_fetch: str) -> str:
     """ With a given file path and file name, fetch the contents of a file from the repository """
+    if file_path is None or file_path == "":
+        file_path = repo_url
     if not file_to_fetch or not file_to_fetch.strip ():
         raise ValueError ("file_to_fetch must be provided.")
     try:
@@ -166,6 +189,8 @@ def post_final_review(pr_number: int, comment: str, file_path: str = "") -> str:
     Takes a PR number and a review comment, fetches the pull request,
     and posts the comment as a pull request review body.
     """
+    if file_path is None or file_path == "":
+        file_path = repo_url
     if not comment or not comment.strip ():
         raise ValueError ("Comment must be provided.")
 
