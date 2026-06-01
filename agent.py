@@ -35,7 +35,6 @@ llm = OpenAILike (
 repo_url = os.getenv("REPOSITORY")
 pr_number_from_env = os.getenv("PR_NUMBER")
 # My own public GitHub repository URL if needed. "https://github.com/fvreys/recipes-api-main.git"
-# Updated feature branch --> To trigger GithubActions
 
 # TOOLS
 def get_repository(file_path: str):
